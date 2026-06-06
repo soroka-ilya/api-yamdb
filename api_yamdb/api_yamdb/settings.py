@@ -15,6 +15,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
+    'rest_framework_simplejwt',
     'users.apps.UsersConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -106,3 +108,9 @@ STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 # Сustom user model
 
 AUTH_USER_MODEL = 'users.User'
+
+# Email backend
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = 'admin@yamdb.local'
