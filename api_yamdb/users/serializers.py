@@ -23,7 +23,7 @@ class SignupSerializer(serializers.Serializer):
                 'Username "me" is not allowed.'
             )
         return value
-    
+
     def validate(self, data):
         username = data.get('username')
         email = data.get('email')
@@ -89,7 +89,7 @@ class UserSerializer(serializers.ModelSerializer):
                 'Username "me" is not allowed.'
             )
         return value
-    
+
     def validate(self, data):
         username = data.get('username')
         email = data.get('email')
@@ -102,7 +102,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'username': 'This username is already taken.'}
             )
-        
+  
         if email and (
             User.objects.filter(email=email)
             .exclude(pk=getattr(self.instance, 'pk', None))
@@ -111,7 +111,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'email': 'This email is already registered.'}
             )
-        
+
         return data
 
 
