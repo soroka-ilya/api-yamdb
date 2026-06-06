@@ -27,6 +27,11 @@ class User(AbstractUser):
         choices=ROLES,
         default=USER,
     )
+    confirmation_code = models.CharField(
+        'Код подтверждения',
+        max_length=255,
+        blank=True,
+    )
 
     @property
     def is_admin(self):
