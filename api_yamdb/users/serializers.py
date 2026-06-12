@@ -118,3 +118,80 @@ class UserSerializer(serializers.ModelSerializer):
 class MeSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
+
+
+from django.db.models import Avg
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = None
+        fields = ('name', 'slug')
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = None
+        fields = ('name', 'slug')
+
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = None
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
+
+    def get_rating(self, obj):
+        try:
+            reviews = getattr(obj, 'reviews', None)
+            if reviews is None:
+                reviews = getattr(obj, 'review_set', None)
+            if reviews is None:
+                return None
+            agg = reviews.aggregate(avg=Avg('score'))
+            avg = agg.get('avg')
+            return round(avg) if avg is not None else None
+        except Exception:
+            return None
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=None,
+        many=True,
+    )
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=None,
+    )
+
+    class Meta:
+        model = None
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+
+    def validate_name(self, value):
+        if len(value) > 256:
+            raise serializers.ValidationError(
+                'The field `name` must be at most 256 characters.'
+            )
+        return value
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        try:
+            self.fields['genre'].queryset = _models.Genre.objects.all()
+            self.fields['category'].queryset = _models.Category.objects.all()
+        except Exception:
+            pass
+
+from . import models as _models
+
+CategorySerializer.Meta.model = _models.Category
+GenreSerializer.Meta.model = _models.Genre
+TitleReadSerializer.Meta.model = _models.Title
+TitleWriteSerializer.Meta.model = _models.Title
+
