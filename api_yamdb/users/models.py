@@ -50,8 +50,6 @@ class User(AbstractUser):
         return self.username
 
 
-
-
 class Category(models.Model):
     name = models.CharField('Название', max_length=256)
     slug = models.SlugField('Слаг', max_length=50, unique=True)
@@ -113,5 +111,6 @@ class GenreTitle(models.Model):
         verbose_name = 'Жанр произведения'
         verbose_name_plural = 'Жанры произведений'
         constraints = [
-            models.UniqueConstraint(fields=['title', 'genre'], name='unique_genre_title'),
+            models.UniqueConstraint(
+                fields=['title', 'genre'], name='unique_genre_title'),
         ]

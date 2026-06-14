@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
+from django.db.models import Avg
+from . import models
+
 
 User = get_user_model()
 username_validator = UnicodeUsernameValidator()
@@ -102,7 +105,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'username': 'This username is already taken.'}
             )
-  
+
         if email and (
             User.objects.filter(email=email)
             .exclude(pk=getattr(self.instance, 'pk', None))
@@ -120,18 +123,15 @@ class MeSerializer(UserSerializer):
         read_only_fields = ('role',)
 
 
-from django.db.models import Avg
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = None
+        model = models.Category
         fields = ('name', 'slug')
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = None
+        model = models.Genre
         fields = ('name', 'slug')
 
 
@@ -141,8 +141,9 @@ class TitleReadSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
 
     class Meta:
-        model = None
-        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
+        model = models.Title
+        fields = ('id', 'name', 'year', 'rating',
+                  'description', 'genre', 'category')
 
     def get_rating(self, obj):
         try:
@@ -161,16 +162,16 @@ class TitleReadSerializer(serializers.ModelSerializer):
 class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         slug_field='slug',
-        queryset=None,
+        queryset=models.Genre.objects.all(),
         many=True,
     )
     category = serializers.SlugRelatedField(
         slug_field='slug',
-        queryset=None,
+        queryset=models.Category.objects.all(),
     )
 
     class Meta:
-        model = None
+        model = models.Title
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
     def validate_name(self, value):
@@ -183,15 +184,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         try:
-            self.fields['genre'].queryset = _models.Genre.objects.all()
-            self.fields['category'].queryset = _models.Category.objects.all()
+            self.fields['genre'].queryset = models.Genre.objects.all()
+            self.fields['category'].queryset = models.Category.objects.all()
         except Exception:
             pass
-
-from . import models as _models
-
-CategorySerializer.Meta.model = _models.Category
-GenreSerializer.Meta.model = _models.Genre
-TitleReadSerializer.Meta.model = _models.Title
-TitleWriteSerializer.Meta.model = _models.Title
-

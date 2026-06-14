@@ -110,8 +110,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
 class CategoryViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -143,7 +141,8 @@ class GenreViewSet(
 
 
 class TitleViewSet(ModelViewSet):
-    queryset = Title.objects.all().select_related('category').prefetch_related('genre')
+    queryset = Title.objects.all().select_related(
+        'category').prefetch_related('genre')
     permission_classes = (IsAdminOrReadOnly,)
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
