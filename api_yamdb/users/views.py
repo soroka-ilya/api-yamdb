@@ -3,19 +3,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, mixins
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework import filters as drf_filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import IsAdmin
+from .permissions import IsAdmin, IsAdminOrReadOnly
 from .serializers import (
-    MeSerializer,
-    SignupSerializer,
-    TokenSerializer,
-    UserSerializer,
+    MeSerializer, SignupSerializer, TokenSerializer, UserSerializer,
+    CategorySerializer, GenreSerializer, TitleReadSerializer, TitleWriteSerializer,
 )
+from .models import Category, Genre, Title
 
 User = get_user_model()
 
@@ -107,3 +108,62 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+class CategoryViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = (IsAdminOrReadOnly,)
+    lookup_field = 'slug'
+    filter_backends = (drf_filters.SearchFilter,)
+    search_fields = ('name',)
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+
+class GenreViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = (IsAdminOrReadOnly,)
+    lookup_field = 'slug'
+    filter_backends = (drf_filters.SearchFilter,)
+    search_fields = ('name',)
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+
+class TitleViewSet(ModelViewSet):
+    queryset = Title.objects.all().select_related('category').prefetch_related('genre')
+    permission_classes = (IsAdminOrReadOnly,)
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
+
+    def get_queryset(self):
+        qs = self.queryset
+        genre = self.request.query_params.get('genre')
+        category = self.request.query_params.get('category')
+        year = self.request.query_params.get('year')
+        name = self.request.query_params.get('name')
+        if genre:
+            qs = qs.filter(genre__slug=genre)
+        if category:
+            qs = qs.filter(category__slug=category)
+        if year:
+            qs = qs.filter(year=year)
+        if name:
+            qs = qs.filter(name__icontains=name)
+        return qs
