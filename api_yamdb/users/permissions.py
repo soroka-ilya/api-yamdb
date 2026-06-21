@@ -29,16 +29,17 @@ class IsAuthorModeratorAdminOrReadOnly(BasePermission):
             or request.user.is_moderator
         )
 
-class IsAuthorModeratorAdmin(permissions.BasePermission):
+
+class IsAuthorModeratorAdmin(BasePermission):
     """Разрешение для автора, модератора или администратора."""
 
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
+        if request.method in SAFE_METHODS:
             return True
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
+        if request.method in SAFE_METHODS:
             return True
         if request.user == obj.author:
             return True

@@ -2,9 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
 from django.db.models import Avg
+from .models import Category, Genre, Title
 from reviews.models import Review, Comment
-from . import models
-
 
 User = get_user_model()
 username_validator = UnicodeUsernameValidator()
@@ -126,13 +125,13 @@ class MeSerializer(UserSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Category
+        model = Category
         fields = ('name', 'slug')
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Genre
+        model = Genre
         fields = ('name', 'slug')
 
 
@@ -142,7 +141,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
 
     class Meta:
-        model = models.Title
+        model = Title
         fields = ('id', 'name', 'year', 'rating',
                   'description', 'genre', 'category')
 
@@ -163,16 +162,16 @@ class TitleReadSerializer(serializers.ModelSerializer):
 class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         slug_field='slug',
-        queryset=models.Genre.objects.all(),
+        queryset=Genre.objects.all(),
         many=True,
     )
     category = serializers.SlugRelatedField(
         slug_field='slug',
-        queryset=models.Category.objects.all(),
+        queryset=Category.objects.all(),
     )
 
     class Meta:
-        model = models.Title
+        model = Title
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
     def validate_name(self, value):
@@ -185,10 +184,12 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         try:
-            self.fields['genre'].queryset = models.Genre.objects.all()
-            self.fields['category'].queryset = models.Category.objects.all()
+            self.fields['genre'].queryset = Genre.objects.all()
+            self.fields['category'].queryset = Category.objects.all()
         except Exception:
             pass
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username', read_only=True

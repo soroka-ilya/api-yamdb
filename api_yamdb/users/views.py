@@ -3,20 +3,23 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+
 from rest_framework import filters, status, viewsets, mixins
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from rest_framework import filters as drf_filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import IsAdmin, IsAdminOrReadOnly
+from .models import Title, Category, Genre
+from reviews.models import Review
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorModeratorAdmin
 from .serializers import (
     MeSerializer, SignupSerializer, TokenSerializer, UserSerializer,
-    CategorySerializer, GenreSerializer, TitleReadSerializer, TitleWriteSerializer,
+    CategorySerializer, GenreSerializer,
+    TitleReadSerializer, TitleWriteSerializer,
+    ReviewSerializer, CommentSerializer
 )
-from .models import Category, Genre, Title
 
 User = get_user_model()
 
@@ -120,7 +123,7 @@ class CategoryViewSet(
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
     lookup_field = 'slug'
-    filter_backends = (drf_filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
@@ -135,7 +138,7 @@ class GenreViewSet(
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
     lookup_field = 'slug'
-    filter_backends = (drf_filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
@@ -167,15 +170,11 @@ class TitleViewSet(ModelViewSet):
             qs = qs.filter(name__icontains=name)
         return qs
 
-from django.shortcuts import get_object_or_404
-from reviews.models import Title, Review, Comment
-from .serializers import ReviewSerializer, CommentSerializer
-from .permissions import IsAuthorModeratorAdmin
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (IsAuthorModeratorAdmin,)
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     def get_title(self):
         return get_object_or_404(Title, id=self.kwargs.get('title_id'))
@@ -193,6 +192,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (IsAuthorModeratorAdmin,)
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     def get_review(self):
         return get_object_or_404(
