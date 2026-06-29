@@ -12,7 +12,7 @@ def validate_year_not_in_future(value):
     current_year = datetime.date.today().year
     if value > current_year:
         raise ValidationError(
-            f'Год издания ({value}) не может быть больше текущего ({current_year}).'
+            f'Год издания ({value}) не может быть больше ({current_year}).'
         )
 
 

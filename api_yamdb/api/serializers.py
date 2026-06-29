@@ -38,10 +38,12 @@ class SignupSerializer(BaseUsernameSerializer):
         email = data.get('email')
         errors = {}
 
-        if User.objects.filter(username=username).exclude(email=email).exists():
+        if (User.objects.filter(username=username)
+                .exclude(email=email).exists()):
             errors['username'] = 'Этот username уже занят.'
 
-        if User.objects.filter(email=email).exclude(username=username).exists():
+        if (User.objects.filter(email=email)
+                .exclude(username=username).exists()):
             errors['email'] = 'Этот email уже занят.'
 
         if errors:
