@@ -5,7 +5,7 @@ from .models import User
 
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
+class YaUserAdmin(UserAdmin):
     list_display = (
         'id',
         'username',

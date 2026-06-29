@@ -1,5 +1,16 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.db import models
+
+from core.constants import MAX_CONFIRMATION_CODE_LENGTH, MAX_ROLE_LENGTH
+
+
+def validate_username_not_me(value):
+    if value.lower() == 'me':
+        raise ValidationError(
+            'Использовать имя "me" в качестве username запрещено.'
+        )
 
 
 class User(AbstractUser):
@@ -13,6 +24,12 @@ class User(AbstractUser):
         (ADMIN, 'Администратор'),
     )
 
+    username = models.CharField(
+        'Имя пользователя',
+        max_length=150,
+        unique=True,
+        validators=[UnicodeUsernameValidator(), validate_username_not_me],
+    )
     email = models.EmailField(
         'email address',
         unique=True,
@@ -23,13 +40,13 @@ class User(AbstractUser):
     )
     role = models.CharField(
         'Роль',
-        max_length=9,
+        max_length=MAX_ROLE_LENGTH,
         choices=ROLES,
         default=USER,
     )
     confirmation_code = models.CharField(
         'Код подтверждения',
-        max_length=255,
+        max_length=MAX_CONFIRMATION_CODE_LENGTH,
         blank=True,
     )
 
@@ -39,78 +56,12 @@ class User(AbstractUser):
 
     @property
     def is_moderator(self):
-        return self.role == self.MODERATOR
+        return self.role == self.MODERATOR or self.is_superuser
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ('id',)
+        ordering = ('username',)
 
     def __str__(self):
         return self.username
-
-
-class Category(models.Model):
-    name = models.CharField('Название', max_length=256)
-    slug = models.SlugField('Слаг', max_length=50, unique=True)
-
-    class Meta:
-        verbose_name = 'Категория'
-        verbose_name_plural = 'Категории'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
-class Genre(models.Model):
-    name = models.CharField('Название', max_length=256)
-    slug = models.SlugField('Слаг', max_length=50, unique=True)
-
-    class Meta:
-        verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
-class Title(models.Model):
-    name = models.CharField('Название произведения', max_length=256)
-    year = models.IntegerField('Год издания')
-    description = models.TextField('Описание', blank=True, null=True)
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        related_name='titles',
-        null=True,
-        verbose_name='Категория',
-    )
-    genre = models.ManyToManyField(
-        Genre,
-        through='GenreTitle',
-        related_name='titles',
-        verbose_name='Жанры',
-    )
-
-    class Meta:
-        verbose_name = 'Произведение'
-        verbose_name_plural = 'Произведения'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
-class GenreTitle(models.Model):
-    title = models.ForeignKey(Title, on_delete=models.CASCADE)
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = 'Жанр произведения'
-        verbose_name_plural = 'Жанры произведений'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['title', 'genre'], name='unique_genre_title'),
-        ]
